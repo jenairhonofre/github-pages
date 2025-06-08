@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Relatório de Vendas</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --cor-primaria: #3b82f6;
+      --cor-secundaria: #10b981;
+      --cor-alerta: #ef4444;
+      --cor-destaque: #f59e0b;
+      --cor-fundo: #f3f4f6;
+      --cor-texto: #1f2937;
+      --cor-borda: #d1d5db;
+      --cor-desfazer: #8b5cf6;
+    }
+    
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    body {
+      background-color: var(--cor-fundo);
+      margin: 0;
+      padding: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      color: var(--cor-texto);
+      line-height: 1.4;
+      touch-action: manipulation;
+    }
+    
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 12px;
+      overflow: hidden;
+    }
+    
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+      margin: 0 0 12px 0;
+      color: var(--cor-primaria);
+    }
+    
+    .input-group {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    @media (min-width: 400px) {
+      .input-group {
+        grid-template-columns: 1fr 2fr;
+      }
+    }
+    
+    label {
+      font-weight: 600;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 4px;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--cor-borda);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      background-color: white;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--cor-primaria);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    
+    /* Menu oculto e botão de hambúrguer */
+    .menu-toggle {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: 40px;
+      height: 40px;
+      background-color: var(--cor-primaria);
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 1001;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .menu-toggle span {
+      display: block;
+      width: 20px;
+      height: 2px;
+      background-color: white;
+      margin: 2px 0;
+      transition: all 0.3s ease;
+    }
+    
+    .hidden-menu {
+      position: fixed;
+      top: 0;
+      right: -300px;
+      width: 250px;
+      height: 100%;
+      background-color: white;
+      z-index: 1000;
+      transition: right 0.3s ease;
+      padding: 60px 15px 15px;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+      overflow-y: auto;
+    }
+    
+    .hidden-menu.active {
+      right: 0;
+    }
+    
+    .menu-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 999;
+      display: none;
+    }
+    
+    .menu-overlay.active {
+      display: block;
+    }
+    
+    .btn-group-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .btn-menu {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+      display: flex;
+      align-items: center;
+    }
+    
+    .btn-menu i {
+      margin-right: 8px;
+      font-size: 16px;
+    }
+    
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-bottom: 12px;
+      border: 1px solid var(--cor-borda);
+      border-radius: 8px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
+    
+    th, td {
+      padding: 8px;
+      text-align: center;
+      border: 1px solid var(--cor-borda);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    th {
+      background-color: var(--cor-fundo);
+      position: sticky;
+      top: 0;
+    }
+    
+    td:first-child, th:first-child {
+      position: sticky;
+      left: 0;
+      background-color: white;
+      text-align: left;
+      min-width: 180px;
+    }
+    
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--cor-borda);
+      border-radius: 6px;
+      text-align: center;
+      font-weight: 600;
+    }
+    
+    /* Ajustes para os campos de caixas, unidades e Un/Cx */
+    input[type="number"].cx-un {
+      max-width: 100px;
+      margin: 0 auto;
+      font-size: 14px;
+    }
+    
+    /* Estilo para campos de preço */
+    input[type="number"].preco {
+      max-width: 120px;
+    }
+    
+    /* Estilo para campo de produto */
+    input[type="text"].produto {
+      min-width: 180px;
+      text-align: left;
+      padding: 8px 12px;
+    }
+    
+    #resultado {
+      background-color: var(--cor-fundo);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    
+    #resultado strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--cor-primaria);
+    }
+    
+    #resultado ul {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+    
+    #resultado p {
+      margin-top: 8px;
+      font-weight: 700;
+    }
+    
+    /* Estilos do Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .modal-content {
+      background-color: white;
+      margin: 15% auto;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    
+    /* Modal de tela inteira para relatórios - VERSÃO ATUALIZADA */
+    .modal-fullscreen {
+      display: none;
+      position: fixed;
+      z-index: 1050;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: white;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 20px;
+    }
+    
+    .modal-fullscreen-header {
+      width: 100%;
+      background-color: transparent;
+      color: var(--cor-primaria);
+      padding: 15px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1051;
+    }
+    
+    .modal-fullscreen-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--cor-primaria);
+    }
+    
+    .close-fullscreen-modal {
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: var(--cor-primaria);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--cor-primaria);
+    }
+    
+    .close-modal {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--cor-texto);
+      cursor: pointer;
+    }
+    
+    .modal-body {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    
+    /* Melhorias para edição de cabeçalho */
+    .editable-header {
+      position: relative;
+      cursor: pointer;
+    }
+    
+    /* Efeito de toque em botões */
+    button:active {
+      opacity: 0.8;
+    }
+    
+    /* Scroll suave para mobile */
+    .table-container {
+      scroll-behavior: smooth;
+    }
+    
+    /* Efeito de delay na edição */
+    .editable-header.editing {
+      transition: all 0.3s ease;
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    
+    /* Estilos para o relatório detalhado */
+    .relatorio-tabela {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    
+    .relatorio-tabela th, .relatorio-tabela td {
+      padding: 8px;
+      border: 1px solid var(--cor-borda);
+      text-align: center;
+    }
+    
+    .relatorio-tabela th {
+      background-color: var(--cor-fundo);
+    }
+    
+    .relatorio-tabela tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    
+    /* Estilos VERTICAIS para o seletor de período no modal */
+    .periodo-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .periodo-selector input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--cor-borda);
+    }
+    
+    .periodo-selector button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background-color: var(--cor-primaria);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    /* Estilos para os totais no relatório */
+    .relatorio-totais {
+      font-weight: bold;
+      background-color: var(--cor-fundo);
+    }
+    
+    /* Barra de ferramentas no modal de relatório - VERSÃO VERTICAL */
+    .relatorio-toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .relatorio-toolbar button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .btn-exportar {
+      background-color: var(--cor-secundaria);
+      color: white;
+    }
+    
+    .btn-exportar-txt {
+      background-color: var(--cor-destaque);
+      color: white;
+    }
+    
+    .btn-fechar {
+      background-color: var(--cor-alerta);
+      color: white;
+    }
+    
+    /* Modal para contagem final - CORRIGIDO */
+    .modal-contagem {
+      display: none;
+      position: fixed;
+      z-index: 1100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-contagem-content {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 300px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .modal-contagem-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .modal-contagem-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--cor-primaria);
+    }
+
+    .modal-contagem-body {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .modal-contagem-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    
+    /* Modal para Backup/Restore */
+    .modal-backup {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-backup-content {
+      background-color: white;
+      margin: 15% auto;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .backup-options {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .backup-option {
+      padding: 15px;
+      border: 1px solid var(--cor-borda);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .backup-option:hover {
+      background-color: var(--cor-fundo);
+    }
+
+    .backup-option h3 {
+      margin-top: 0;
+      color: var(--cor-primaria);
+    }
+
+    .backup-option p {
+      margin-bottom: 0;
+      color: var(--cor-texto);
+    }
+
+    .textarea-backup {
+      width: 100%;
+      height: 200px;
+      padding: 10px;
+      border: 1px solid var(--cor-borda);
+      border-radius: 8px;
+      font-family: monospace;
+      resize: vertical;
+    }
+    
+    /* Estilos para o relatório resumido */
+    .relatorio-resumo {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    
+    .relatorio-resumo th, .relatorio-resumo td {
+      padding: 10px;
+      border: 1px solid var(--cor-borda);
+      text-align: left;
+    }
+    
+    .relatorio-resumo th {
+      background-color: var(--cor-primaria);
+      color: white;
+    }
+    
+    .relatorio-resumo tr:nth-child(even) {
+      background-color: var(--cor-fundo);
+    }
+    
+    .relatorio-resumo .total-row {
+      font-weight: bold;
+      background-color: var(--cor-destaque);
+      color: white;
+    }
+    
+    .resumo-header {
+      background-color: var(--cor-primaria);
+      color: white;
+      padding: 15px;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: 0;
+    }
+    
+    .resumo-periodo {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: var(--cor-primaria);
+    }
+    
+    /* Estilos responsivos para telas maiores */
+    @media (min-width: 768px) {
+      .periodo-selector {
+        flex-direction: row;
+        align-items: center;
+      }
+      
+      .periodo-selector input {
+        flex: 1;
+      }
+      
+      .periodo-selector button {
+        width: auto;
+        min-width: 150px;
+      }
+      
+      .relatorio-toolbar {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+      
+      .relatorio-toolbar button {
+        width: auto;
+        flex: 1;
+        min-width: 150px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Botão de menu hambúrguer -->
+  <div class="menu-toggle" onclick="toggleMenu()">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+  
+  <!-- Menu oculto -->
+  <div class="hidden-menu" id="hiddenMenu">
+    <div class="btn-group-menu">
+      <button onclick="abrirModalAdicionar()" class="btn-menu btn-primary">➕ Adicionar</button>
+      <button onclick="calcular()" class="btn-menu btn-success">🟰 Calcular</button>
+      <button onclick="desfazerAcao()" class="btn-menu btn-undo">↩️ Desfazer</button>
+      <button onclick="novaContagem()" class="btn-menu btn-warning">🔄 Nova Contagem</button>
+      <button onclick="abrirModalRelatorioPeriodo()" class="btn-menu btn-info">📅 Relatório por Período</button>
+      <button onclick="abrirModalBackup()" class="btn-menu btn-primary">💾 Backup/Restore</button>
+    </div>
+  </div>
+  
+  <!-- Overlay do menu -->
+  <div class="menu-overlay" id="menuOverlay"></div>
+  
+  <div class="container">
+    <h2>Relatório de Vendas</h2>
+    
+    <div class="input-group">
+      <div>
+        <label for="dataContagem">Data:</label>
+        <input type="date" id="dataContagem">
+      </div>
+      <div>
+        <label for="datasSalvas">Datas Salvas:</label>
+        <select id="datasSalvas" onchange="carregarDadosSelecionados()">
+          <option value="">Carregar outra data</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="table-container">
+      <table id="tabelaInventario">
+        <thead>
+          <tr>
+            <th class="editable-header" onclick="editarCabecalho(this)">Produto</th>
+            <th class="editable-header" colspan="2" onclick="editarCabecalho(this)">Estoque Ant.</th>
+            <th class="editable-header" colspan="2" onclick="editarCabecalho(this)">Entradas</th>
+            <th class="editable-header" colspan="2" onclick="editarCabecalho(this)">Cont. Final</th>
+            <th class="editable-header" onclick="editarCabecalho(this)">Un/Cx</th>
+            <th class="editable-header" onclick="editarCabecalho(this)">Preço (R$)</th>
+          </tr>
+          <tr>
+            <th></th>
+            <th class="editable-header" onclick="editarCabecalho(this)">cx</th>
+            <th class="editable-header" onclick="editarCabecalho(this)">un</th>
+            <th class="editable-header" onclick="editarCabecalho(this)">cx</th>
+            <th class="editable-header" onclick="editarCabecalho(this)">un</th>
+            <th class="editable-header" onclick="editarCabecalho(this)">cx</th>
+            <th class="editable-header" onclick="editarCabecalho(this)">un</th>
+            <th></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabelaProdutos"></tbody>
+      </table>
+    </div>
+    
+    <div id="resultado"></div>
+  </div>
+
+  <!-- Modal para Adicionar Produto -->
+  <div id="modalAdicionar" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Adicionar Produto</h3>
+        <span class="close-modal" onclick="fecharModal('modalAdicionar')">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div>
+          <label for="modalNome">Produto:</label>
+          <input type="text" id="modalNome" class="produto">
+        </div>
+        <div>
+          <label>Estoque Anterior:</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div>
+              <label for="modalEstCx">cx</label>
+              <input type="number" id="modalEstCx" class="cx-un" min="0" max="99999">
+            </div>
+            <div>
+              <label for="modalEstUn">un</label>
+              <input type="number" id="modalEstUn" class="cx-un" min="0" max="99999">
+            </div>
+          </div>
+        </div>
+        <div>
+          <label>Entradas:</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div>
+              <label for="modalEntCx">cx</label>
+              <input type="number" id="modalEntCx" class="cx-un" min="0" max="99999">
+            </div>
+            <div>
+              <label for="modalEntUn">un</label>
+              <input type="number" id="modalEntUn" class="cx-un" min="0" max="99999">
+            </div>
+          </div>
+        </div>
+        <div>
+          <label>Contagem Final:</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div>
+              <label for="modalFimCx">cx</label>
+              <input type="number" id="modalFimCx" class="cx-un" min="0" max="99999">
+            </div>
+            <div>
+              <label for="modalFimUn">un</label>
+              <input type="number" id="modalFimUn" class="cx-un" min="0" max="99999">
+            </div>
+          </div>
+        </div>
+        <div>
+          <label for="modalUnCaixa">Unidades por Caixa:</label>
+          <input type="number" id="modalUnCaixa" class="cx-un" min="1" value="1">
+        </div>
+        <div>
+          <label for="modalPreco">Preço Unitário (R$):</label>
+          <input type="number" id="modalPreco" class="preco" min="0" step="0.01" value="0">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="fecharModal('modalAdicionar')" class="btn-secondary">Cancelar</button>
+        <button onclick="confirmarAdicao()" class="btn-primary">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de tela inteira para Relatório por Período - VERSÃO ATUALIZADA -->
+  <div id="modalRelatorioPeriodo" class="modal-fullscreen">
+    <div class="modal-fullscreen-header">
+      <h3 class="modal-fullscreen-title">Relatório</h3>
+      <button class="close-fullscreen-modal" onclick="fecharModalRelatorioPeriodo()">&times;</button>
+    </div>
+    
+    <div class="modal-fullscreen-body">
+      <div class="periodo-selector">
+        <input type="date" id="dataInicioRelatorio" placeholder="Data Início">
+        <input type="date" id="dataFimRelatorio" placeholder="Data Fim">
+        <button onclick="gerarRelatorioPeriodo()">Gerar Relatório</button>
+      </div>
+      
+      <div class="relatorio-toolbar">
+        <button class="btn-exportar" onclick="exportarRelatorioPDF()">
+          <span>📊</span> Exportar PDF
+        </button>
+        <button class="btn-exportar-txt" onclick="exportarRelatorioTXT()">
+          <span>📄</span> Exportar TXT
+        </button>
+        <button class="btn-exportar" onclick="compartilharWhatsApp()">
+          <span>📱</span> Compartilhar no WhatsApp
+        </button>
+        <button class="btn-fechar" onclick="fecharModalRelatorioPeriodo()">
+          <span>✕</span> Fechar
+        </button>
+      </div>
+      
+      <div id="relatorioResumoContainer">
+        <!-- O conteúdo do relatório resumido será inserido aqui dinamicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Contagem Final -->
+  <div id="modalContagemFinal" class="modal-contagem">
+    <div class="modal-contagem-content">
+      <div class="modal-contagem-header">
+        <h3 class="modal-contagem-title">Contagem Final</h3>
+        <span class="close-modal" onclick="fecharModal('modalContagemFinal')">&times;</span>
+      </div>
+      <div class="modal-contagem-body">
+        <div>
+          <label>Contagem Final:</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div>
+              <label for="modalContagemCx">cx</label>
+              <input type="number" id="modalContagemCx" class="cx-un" min="0" max="99999">
+            </div>
+            <div>
+              <label for="modalContagemUn">un</label>
+              <input type="number" id="modalContagemUn" class="cx-un" min="0" max="99999">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-contagem-footer">
+        <button onclick="fecharModal('modalContagemFinal')" class="btn-secondary">Cancelar</button>
+        <button onclick="confirmarContagemFinal()" class="btn-primary">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Backup/Restore -->
+  <div id="modalBackup" class="modal-backup">
+    <div class="modal-backup-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Backup e Restauração</h3>
+        <span class="close-modal" onclick="fecharModal('modalBackup')">&times;</span>
+      </div>
+      <div class="modal-body">
+        <p>Gerencie seus backups e restaurações de dados. Escolha uma opção abaixo:</p>
+        
+        <div class="backup-options">
+          <div class="backup-option" onclick="gerarBackup()">
+            <h3>Gerar Backup</h3>
+            <p>Crie um arquivo de backup com todos os seus dados atuais.</p>
+          </div>
+          
+          <div class="backup-option" onclick="document.getElementById('restoreFile').click()">
+            <h3>Restaurar Backup</h3>
+            <p>Restaurar dados a partir de um arquivo de backup.</p>
+            <input type="file" id="restoreFile" accept=".json" style="display: none;" onchange="restaurarBackup(this)">
+          </div>
+          
+          <div class="backup-option" onclick="copiarDadosBackup()">
+            <h3>Copiar Dados</h3>
+            <p>Copie todos os dados para a área de transferência.</p>
+          </div>
+          
+          <div class="backup-option" onclick="document.getElementById('backupText').style.display = 'block'; document.getElementById('backupActions').style.display = 'block';">
+            <h3>Restaurar de Texto</h3>
+            <p>Cole os dados de backup no campo abaixo.</p>
+          </div>
+        </div>
+        
+        <textarea id="backupText" class="textarea-backup" placeholder="Cole aqui os dados de backup..." style="display: none;"></textarea>
+        
+        <div id="backupActions" style="display: none; margin-top: 10px;">
+          <button onclick="restaurarDeTexto()" class="btn-primary">Restaurar</button>
+          <button onclick="document.getElementById('backupText').style.display = 'none'; document.getElementById('backupActions').style.display = 'none';" class="btn-secondary">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// Variáveis globais
+let infoFixas = JSON.parse(localStorage.getItem("infoFixas") || "{}");
+let cabecalhosSalvos = JSON.parse(localStorage.getItem("cabecalhos") || "null");
+let historicoAcoes = [];
+let estadoAtual = [];
+let linhaEditando = null;
+let linhaContagemFinal = null;
+let autoSaveTimeout = null;
+let calcularTimeout = null;
+
+// Função para carregar dados persistentes
+function carregarDadosPersistentes() {
+  const dadosPersistentes = JSON.parse(localStorage.getItem("dadosPersistentes") || "null");
+  if (dadosPersistentes) {
+    // Restaura a data atual
+    document.getElementById('dataContagem').value = dadosPersistentes.dataContagem || new Date().toISOString().split('T')[0];
+    
+    // Restaura os produtos
+    document.getElementById("tabelaProdutos").innerHTML = "";
+    if (dadosPersistentes.produtos && dadosPersistentes.produtos.length > 0) {
+      dadosPersistentes.produtos.forEach(p => adicionarProduto(p));
+    }
+    
+    // Calcula automaticamente
+    calcular();
+  } else {
+    // Configura data atual se não houver dados persistentes
+    configurarDataAtual();
+  }
+}
+
+// Função para salvar dados persistentes
+function salvarDadosPersistentes() {
+  const produtos = [];
+  document.querySelectorAll("#tabelaProdutos tr").forEach(linha => {
+    const produto = {
+      nome: linha.cells[0].firstChild.value,
+      estoqueAnteriorCx: linha.cells[1].firstChild.value,
+      estoqueAnteriorUn: linha.cells[2].firstChild.value,
+      entradasCx: linha.cells[3].firstChild.value,
+      entradasUn: linha.cells[4].firstChild.value,
+      finalCx: linha.cells[5].firstChild.value,
+      finalUn: linha.cells[6].firstChild.value,
+      unidadesPorCaixa: linha.cells[7].firstChild.value,
+      precoUnitario: linha.cells[8].firstChild.value
+    };
+    produtos.push(produto);
+  });
+
+  const dadosPersistentes = {
+    dataContagem: document.getElementById('dataContagem').value,
+    produtos: produtos,
+    dataUltimaAtualizacao: new Date().toISOString()
+  };
+
+  localStorage.setItem("dadosPersistentes", JSON.stringify(dadosPersistentes));
+}
+
+// Funções para o menu oculto
+function toggleMenu() {
+  const menu = document.getElementById("hiddenMenu");
+  const overlay = document.getElementById("menuOverlay");
+  const toggle = document.querySelector(".menu-toggle");
+  
+  menu.classList.toggle("active");
+  
+  // Mostra ou esconde o overlay baseado no estado do menu
+  overlay.classList.toggle("active");
+  
+  // Anima os spans do botão hambúrguer
+  const spans = toggle.querySelectorAll("span");
+  if (menu.classList.contains("active")) {
+    spans[0].style.transform = "rotate(45deg) translate(5px, 5px)";
+    spans[1].style.opacity = "0";
+    spans[2].style.transform = "rotate(-45deg) translate(5px, -5px)";
+  } else {
+    spans[0].style.transform = "";
+    spans[1].style.opacity = "";
+    spans[2].style.transform = "";
+  }
+}
+
+// Configura data atual ao carregar
+function configurarDataAtual() {
+  const hoje = new Date();
+  const dataFormatada = hoje.toISOString().split('T')[0];
+  document.getElementById('dataContagem').value = dataFormatada;
+  document.getElementById('dataInicioRelatorio').value = dataFormatada;
+  document.getElementById('dataFimRelatorio').value = dataFormatada;
+}
+
+// Abre o modal para adicionar produto
+function abrirModalAdicionar(linha = null) {
+  toggleMenu();
+  linhaEditando = linha;
+  const modal = document.getElementById("modalAdicionar");
+  
+  if (linha) {
+    // Modo edição
+    document.getElementById("modalNome").value = linha.cells[0].firstChild.value;
+    document.getElementById("modalEstCx").value = linha.cells[1].firstChild.value;
+    document.getElementById("modalEstUn").value = linha.cells[2].firstChild.value;
+    document.getElementById("modalEntCx").value = linha.cells[3].firstChild.value;
+    document.getElementById("modalEntUn").value = linha.cells[4].firstChild.value;
+    document.getElementById("modalFimCx").value = linha.cells[5].firstChild.value;
+    document.getElementById("modalFimUn").value = linha.cells[6].firstChild.value;
+    document.getElementById("modalUnCaixa").value = linha.cells[7].firstChild.value;
+    document.getElementById("modalPreco").value = linha.cells[8].firstChild.value;
+    
+    document.querySelector(".modal-title").textContent = "Editar Produto";
+  } else {
+    // Modo adição
+    document.getElementById("modalNome").value = "";
+    document.getElementById("modalEstCx").value = "";
+    document.getElementById("modalEstUn").value = "";
+    document.getElementById("modalEntCx").value = "";
+    document.getElementById("modalEntUn").value = "";
+    document.getElementById("modalFimCx").value = "";
+    document.getElementById("modalFimUn").value = "";
+    document.getElementById("modalUnCaixa").value = "1";
+    document.getElementById("modalPreco").value = "0";
+    
+    document.querySelector(".modal-title").textContent = "Adicionar Produto";
+  }
+  
+  modal.style.display = "block";
+}
+
+// Fecha o modal
+function fecharModal(id) {
+  document.getElementById(id).style.display = "none";
+}
+
+// Abre o modal de relatório por período
+function abrirModalRelatorioPeriodo() {
+  toggleMenu();
+  const modal = document.getElementById("modalRelatorioPeriodo");
+  modal.style.display = "block";
+  
+  const hoje = new Date();
+  const dataFormatada = hoje.toISOString().split('T')[0];
+  document.getElementById('dataInicioRelatorio').value = dataFormatada;
+  document.getElementById('dataFimRelatorio').value = dataFormatada;
+  
+  document.getElementById('relatorioResumoContainer').innerHTML = '';
+}
+
+// Fecha o modal de relatório por período
+function fecharModalRelatorioPeriodo() {
+  document.getElementById("modalRelatorioPeriodo").style.display = "none";
+}
+
+// Abre o modal de contagem final
+function abrirModalContagemFinal(linha) {
+  linhaContagemFinal = linha;
+  const modal = document.getElementById("modalContagemFinal");
+  
+  // Preenche os valores atuais
+  document.getElementById("modalContagemCx").value = linha.cells[5].firstChild.value || "";
+  document.getElementById("modalContagemUn").value = linha.cells[6].firstChild.value || "";
+  
+  // Define o título com o nome do produto
+  document.querySelector(".modal-contagem-title").textContent = `Contagem Final - ${linha.cells[0].firstChild.value}`;
+  
+  modal.style.display = "flex";
+  
+  // Foco automático no campo "cx" após um pequeno delay
+  setTimeout(() => {
+    const campoCx = document.getElementById("modalContagemCx");
+    campoCx.focus();
+    campoCx.select();
+  }, 100);
+}
+
+// Confirma a contagem final
+function confirmarContagemFinal() {
+  if (linhaContagemFinal) {
+    const cx = document.getElementById("modalContagemCx").value;
+    const un = document.getElementById("modalContagemUn").value;
+    
+    linhaContagemFinal.cells[5].firstChild.value = cx;
+    linhaContagemFinal.cells[6].firstChild.value = un;
+    
+    fecharModal('modalContagemFinal');
+    salvarEstado();
+  }
+}
+
+// Confirma a adição/edição do produto
+function confirmarAdicao() {
+  const produto = {
+    nome: document.getElementById("modalNome").value,
+    estoqueAnteriorCx: document.getElementById("modalEstCx").value,
+    estoqueAnteriorUn: document.getElementById("modalEstUn").value,
+    entradasCx: document.getElementById("modalEntCx").value,
+    entradasUn: document.getElementById("modalEntUn").value,
+    finalCx: document.getElementById("modalFimCx").value,
+    finalUn: document.getElementById("modalFimUn").value,
+    unidadesPorCaixa: document.getElementById("modalUnCaixa").value,
+    precoUnitario: document.getElementById("modalPreco").value
+  };
+  
+  if (!produto.nome) {
+    alert("Por favor, informe o nome do produto!");
+    return;
+  }
+  
+  if (linhaEditando) {
+    linhaEditando.cells[0].firstChild.value = produto.nome;
+    linhaEditando.cells[1].firstChild.value = produto.estoqueAnteriorCx;
+    linhaEditando.cells[2].firstChild.value = produto.estoqueAnteriorUn;
+    linhaEditando.cells[3].firstChild.value = produto.entradasCx;
+    linhaEditando.cells[4].firstChild.value = produto.entradasUn;
+    linhaEditando.cells[5].firstChild.value = produto.finalCx;
+    linhaEditando.cells[6].firstChild.value = produto.finalUn;
+    linhaEditando.cells[7].firstChild.value = produto.unidadesPorCaixa;
+    linhaEditando.cells[8].firstChild.value = produto.precoUnitario;
+    
+    linhaEditando = null;
+  } else {
+    adicionarProduto(produto);
+  }
+  
+  fecharModal('modalAdicionar');
+  salvarEstado();
+}
+
+// Salva o estado atual no histórico
+function salvarEstado() {
+  const produtos = [];
+  document.querySelectorAll("#tabelaProdutos tr").forEach(linha => {
+    const produto = {
+      nome: linha.cells[0].firstChild.value,
+      estoqueAnteriorCx: linha.cells[1].firstChild.value,
+      estoqueAnteriorUn: linha.cells[2].firstChild.value,
+      entradasCx: linha.cells[3].firstChild.value,
+      entradasUn: linha.cells[4].firstChild.value,
+      finalCx: linha.cells[5].firstChild.value,
+      finalUn: linha.cells[6].firstChild.value,
+      unidadesPorCaixa: linha.cells[7].firstChild.value,
+      precoUnitario: linha.cells[8].firstChild.value
+    };
+    produtos.push(produto);
+  });
+  
+  if (historicoAcoes.length > 10) {
+    historicoAcoes.shift();
+  }
+  
+  historicoAcoes.push(JSON.stringify(produtos));
+  estadoAtual = produtos;
+  
+  // Salva os dados persistentes
+  salvarDadosPersistentes();
+  
+  // Agenda o salvamento automático
+  agendarSalvamentoAutomatico();
+  
+  // Agenda o cálculo automático
+  agendarCalculoAutomatico();
+}
+
+// Agenda o salvamento automático
+function agendarSalvamentoAutomatico() {
+  if (autoSaveTimeout) {
+    clearTimeout(autoSaveTimeout);
+  }
+  
+  autoSaveTimeout = setTimeout(() => {
+    salvarDadosAutomaticamente();
+  }, 2000); // 2 segundos após a última alteração
+}
+
+// Agenda o cálculo automático
+function agendarCalculoAutomatico() {
+  if (calcularTimeout) {
+    clearTimeout(calcularTimeout);
+  }
+  
+  calcularTimeout = setTimeout(() => {
+    calcular();
+  }, 500); // 0.5 segundos após a última alteração
+}
+
+// Salva dados automaticamente
+function salvarDadosAutomaticamente() {
+  const data = document.getElementById("dataContagem").value;
+  if (!data) return;
+
+  const linhas = document.querySelectorAll("#tabelaProdutos tr");
+  const produtos = [];
+
+  linhas.forEach(linha => {
+    const nome = linha.cells[0].firstChild.value;
+    const info = {
+      nome,
+      estoqueAnteriorCx: +linha.cells[1].firstChild.value || 0,
+      estoqueAnteriorUn: +linha.cells[2].firstChild.value || 0,
+      entradasCx: +linha.cells[3].firstChild.value || 0,
+      entradasUn: +linha.cells[4].firstChild.value || 0,
+      finalCx: +linha.cells[5].firstChild.value || 0,
+      finalUn: +linha.cells[6].firstChild.value || 0,
+      unidadesPorCaixa: +linha.cells[7].firstChild.value || 1,
+      precoUnitario: +linha.cells[8].firstChild.value || 0
+    };
+    produtos.push(info);
+    infoFixas[nome] = {
+      unidadesPorCaixa: info.unidadesPorCaixa,
+      precoUnitario: info.precoUnitario
+    };
+  });
+
+  localStorage.setItem("inventario-" + data, JSON.stringify(produtos));
+  localStorage.setItem("infoFixas", JSON.stringify(infoFixas));
+  atualizarSelectDatas();
+  
+  console.log("Dados salvos automaticamente");
+}
+
+// Desfaz a última ação
+function desfazerAcao() {
+  toggleMenu();
+  if (historicoAcoes.length > 1) {
+    historicoAcoes.pop();
+    const estadoAnterior = JSON.parse(historicoAcoes[historicoAcoes.length - 1]);
+    
+    document.getElementById("tabelaProdutos").innerHTML = "";
+    estadoAnterior.forEach(p => adicionarProduto(p));
+    
+    salvarEstado();
+  } else {
+    alert("Não há ações para desfazer!");
+  }
+}
+
+// Função para editar cabeçalhos
+function editarCabecalho(elemento) {
+  const textoOriginal = elemento.textContent;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = textoOriginal;
+  input.style.width = '100%';
+  input.style.textAlign = 'center';
+  input.style.fontWeight = '600';
+  
+  elemento.innerHTML = '';
+  elemento.appendChild(input);
+  input.focus();
+  
+  input.addEventListener('blur', function() {
+    elemento.textContent = input.value || textoOriginal;
+    salvarCabecalhos();
+  });
+  
+  input.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      elemento.textContent = input.value || textoOriginal;
+      salvarCabecalhos();
+    }
+  });
+}
+
+// Função para salvar cabeçalhos
+function salvarCabecalhos() {
+  const cabecalhos = [];
+  document.querySelectorAll('#tabelaInventario th').forEach(th => {
+    cabecalhos.push(th.textContent);
+  });
+  localStorage.setItem('cabecalhos', JSON.stringify(cabecalhos));
+}
+
+// Cria inputs na tabela
+function criarInput(tipo, valor = "", step = "1", isCxUn = false, isPreco = false, isProduto = false) {
+  const input = document.createElement("input");
+  input.type = tipo;
+  input.value = valor;
+  input.step = step;
+  
+  if (isProduto) {
+    input.className = "input-cell produto";
+    input.style.textAlign = "left";
+    input.style.minWidth = "180px";
+  } else if (isCxUn) {
+    input.className = "input-cell cx-un";
+    input.maxLength = 5;
+    input.min = "0";
+    input.max = "99999";
+    input.style.width = "100px";
+  } else if (isPreco) {
+    input.className = "input-cell preco";
+    input.maxLength = 8;
+    input.min = "0";
+    input.step = "0.01";
+    input.style.width = "120px";
+  } else {
+    input.className = "input-cell";
+    input.style.width = "100px";
+  }
+  
+  input.style.fontWeight = "600";
+  input.style.padding = "8px";
+  
+  // Novo tratamento de eventos de clique
+  let clickTimeout;
+  
+  const handleClick = function(e) {
+    const linha = this.parentElement.parentElement;
+    
+    clearTimeout(clickTimeout);
+    
+    if (e.detail === 1) {
+      clickTimeout = setTimeout(() => {
+        // Clique único
+        if ((isProduto || (isCxUn && (this.parentElement.cellIndex === 5 || this.parentElement.cellIndex === 6)))) {
+          abrirModalContagemFinal(linha);
+        }
+      }, 300);
+    } else if (e.detail === 2) {
+      // Duplo clique - cancela o clique único
+      clearTimeout(clickTimeout);
+      abrirModalAdicionar(linha);
+    }
+  };
+  
+  input.addEventListener('click', handleClick);
+  
+  // Configura o salvamento automático quando o valor muda
+  input.addEventListener('change', () => {
+    salvarEstado();
+  });
+  
+  // Configura o cálculo automático quando o valor muda
+  input.addEventListener('input', () => {
+    agendarCalculoAutomatico();
+  });
+  
+  // Limpa o timeout quando o input perde o foco
+  input.addEventListener('blur', () => {
+    clearTimeout(clickTimeout);
+  });
+  
+  return input;
+}
+
+// Adiciona novo produto à tabela
+function adicionarProduto(produto = {}) {
+  salvarEstado();
+  
+  const tabela = document.getElementById("tabelaProdutos");
+  const linha = document.createElement("tr");
+
+  const nomeInput = criarInput("text", produto.nome || "", "1", false, false, true);
+  nomeInput.onchange = () => preencherFixos(linha, nomeInput.value);
+
+  const estCx = criarInput("number", produto.estoqueAnteriorCx || "", "1", true);
+  const estUn = criarInput("number", produto.estoqueAnteriorUn || "", "1", true);
+  const entCx = criarInput("number", produto.entradasCx || "", "1", true);
+  const entUn = criarInput("number", produto.entradasUn || "", "1", true);
+  const fimCx = criarInput("number", produto.finalCx || "", "1", true);
+  const fimUn = criarInput("number", produto.finalUn || "", "1", true);
+  const unidadesCaixa = criarInput("number", produto.unidadesPorCaixa || "1", true);
+  const precoUn = criarInput("number", produto.precoUnitario || "0", "0.01", false, true);
+
+  const criarCelula = (elemento) => {
+    const td = document.createElement("td");
+    td.appendChild(elemento);
+    return td;
+  };
+
+  linha.appendChild(criarCelula(nomeInput));
+  linha.appendChild(criarCelula(estCx));
+  linha.appendChild(criarCelula(estUn));
+  linha.appendChild(criarCelula(entCx));
+  linha.appendChild(criarCelula(entUn));
+  linha.appendChild(criarCelula(fimCx));
+  linha.appendChild(criarCelula(fimUn));
+  linha.appendChild(criarCelula(unidadesCaixa));
+  linha.appendChild(criarCelula(precoUn));
+
+  tabela.appendChild(linha);
+  
+  // Dispara cálculo automático após adicionar produto
+  agendarCalculoAutomatico();
+}
+
+// Preenche valores fixos
+function preencherFixos(linha, nome) {
+  const info = infoFixas[nome];
+  if (info) {
+    linha.cells[7].firstChild.value = info.unidadesPorCaixa;
+    linha.cells[8].firstChild.value = info.precoUnitario;
+    agendarCalculoAutomatico();
+  }
+}
+
+// Cálculo principal
+function calcular() {
+  const linhas = document.querySelectorAll("#tabelaProdutos tr");
+  const vendas = [];
+  let totalGeral = 0;
+
+  linhas.forEach(linha => {
+    const nome = linha.cells[0].firstChild.value;
+    const estCx = +linha.cells[1].firstChild.value || 0;
+    const estUn = +linha.cells[2].firstChild.value || 0;
+    const entCx = +linha.cells[3].firstChild.value || 0;
+    const entUn = +linha.cells[4].firstChild.value || 0;
+    const fimCx = +linha.cells[5].firstChild.value || 0;
+    const fimUn = +linha.cells[6].firstChild.value || 0;
+    const unPorCaixa = +linha.cells[7].firstChild.value || 1;
+    const precoUn = +linha.cells[8].firstChild.value || 0;
+
+    const totalInicial = (estCx + entCx) * unPorCaixa + estUn + entUn;
+    const totalFinal = fimCx * unPorCaixa + fimUn;
+    const vendidos = totalInicial - totalFinal;
+    const totalVendido = vendidos * precoUn;
+
+    totalGeral += totalVendido;
+    vendas.push({ nome, vendidos, totalVendido });
+  });
+
+  let resultadoHTML = "<strong>Resumo de Vendas:</strong><ul>";
+  vendas.forEach(v => resultadoHTML += `<li>${v.nome}: ${v.vendidos} unid. - R$ ${v.totalVendido.toFixed(2)}</li>`);
+  resultadoHTML += `</ul><p>Total Geral Vendido: R$ ${totalGeral.toFixed(2)}</p>`;
+  document.getElementById("resultado").innerHTML = resultadoHTML;
+}
+
+// Nova contagem
+function novaContagem() {
+  toggleMenu();
+  if (!confirm("Deseja criar uma nova contagem? Os dados atuais serão mantidos como estoque anterior e os dados persistentes serão resetados.")) {
+    return;
+  }
+
+  salvarEstado();
+  
+  const tabela = document.getElementById("tabelaProdutos");
+  const linhas = Array.from(tabela.querySelectorAll("tr"));
+  tabela.innerHTML = "";
+
+  linhas.forEach(linha => {
+    const nome = linha.cells[0].firstChild.value;
+    const unidadesPorCaixa = linha.cells[7].firstChild.value;
+    const precoUnitario = linha.cells[8].firstChild.value;
+    const estoqueAnteriorCx = linha.cells[5].firstChild.value || "";
+    const estoqueAnteriorUn = linha.cells[6].firstChild.value || "";
+
+    adicionarProduto({ 
+      nome, 
+      estoqueAnteriorCx, 
+      estoqueAnteriorUn, 
+      unidadesPorCaixa, 
+      precoUnitario 
+    });
+  });
+
+  // Atualiza a data para a data atual
+  configurarDataAtual();
+  
+  // Salva os novos dados como persistentes
+  salvarDadosPersistentes();
+  
+  calcular();
+}
+
+// Salva dados (mantido para compatibilidade)
+function salvarDados() {
+  salvarDadosAutomaticamente();
+  alert("Dados salvos automaticamente!");
+}
+
+// Carrega dados salvos
+function carregarDadosSelecionados() {
+  salvarEstado();
+  
+  const data = document.getElementById("datasSalvas").value;
+  if (!data) return;
+
+  try {
+    const dadosStr = localStorage.getItem("inventario-" + data);
+    if (!dadosStr) return;
+    
+    const dados = JSON.parse(dadosStr);
+    if (!Array.isArray(dados)) {
+      throw new Error("Dados inválidos no localStorage");
+    }
+    
+    document.getElementById("tabelaProdutos").innerHTML = "";
+    dados.forEach(p => adicionarProduto(p));
+    document.getElementById("dataContagem").value = data;
+    
+    // Atualiza os dados persistentes
+    salvarDadosPersistentes();
+    
+    calcular();
+  } catch (e) {
+    console.error("Erro ao carregar dados:", e);
+    alert("Erro ao carregar dados salvos. Os dados podem estar corrompidos.");
+    localStorage.removeItem("inventario-" + data);
+    atualizarSelectDatas();
+  }
+}
+
+// Atualiza select de datas
+function atualizarSelectDatas() {
+  const select = document.getElementById("datasSalvas");
+  select.innerHTML = '<option value="">Carregar outra data</option>';
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith("inventario-")) {
+      const data = k.replace("inventario-", "");
+      const option = document.createElement("option");
+      option.value = data;
+      option.textContent = data;
+      select.appendChild(option);
+    }
+  });
+}
+
+// Função para gerar relatório por período (estilo resumo de vendas)
+function gerarRelatorioPeriodo() {
+  const dataInicio = document.getElementById('dataInicioRelatorio').value;
+  const dataFim = document.getElementById('dataFimRelatorio').value;
+  
+  if (!dataInicio || !dataFim) {
+    alert('Por favor, selecione as datas de início e fim!');
+    return;
+  }
+  
+  const container = document.getElementById('relatorioResumoContainer');
+  container.innerHTML = '';
+  
+  let totalUnidades = 0;
+  let totalValor = 0;
+  
+  // Percorre todas as datas salvas no intervalo
+  const datasSalvas = [];
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith('inventario-')) {
+      const data = k.replace('inventario-', '');
+      if (data >= dataInicio && data <= dataFim) {
+        datasSalvas.push(data);
+      }
+    }
+  });
+  
+  if (datasSalvas.length === 0) {
+    alert('Nenhum dado encontrado para o período selecionado!');
+    return;
+  }
+  
+  // Ordena as datas
+  datasSalvas.sort();
+  
+  // Agrupa por produto para mostrar um resumo consolidado
+  const relatorioPorProduto = {};
+  
+  datasSalvas.forEach(data => {
+    const dados = JSON.parse(localStorage.getItem(`inventario-${data}`)) || [];
+    
+    dados.forEach(item => {
+      const estCx = +item.estoqueAnteriorCx || 0;
+      const estUn = +item.estoqueAnteriorUn || 0;
+      const entCx = +item.entradasCx || 0;
+      const entUn = +item.entradasUn || 0;
+      const fimCx = +item.finalCx || 0;
+      const fimUn = +item.finalUn || 0;
+      const unPorCaixa = +item.unidadesPorCaixa || 1;
+      const precoUn = +item.precoUnitario || 0;
+
+      const totalInicial = (estCx + entCx) * unPorCaixa + estUn + entUn;
+      const totalFinal = fimCx * unPorCaixa + fimUn;
+      const vendidos = totalInicial - totalFinal;
+      const totalVendido = vendidos * precoUn;
+      
+      if (vendidos > 0) {
+        if (!relatorioPorProduto[item.nome]) {
+          relatorioPorProduto[item.nome] = {
+            unidades: 0,
+            valor: 0
+          };
+        }
+        
+        relatorioPorProduto[item.nome].unidades += vendidos;
+        relatorioPorProduto[item.nome].valor += totalVendido;
+      }
+    });
+  });
+  
+  // Cria o cabeçalho do relatório
+  const resumoHeader = document.createElement('div');
+  resumoHeader.className = 'resumo-header';
+  resumoHeader.innerHTML = `
+    <h3>Relatório Resumido de Vendas</h3>
+    <div class="resumo-periodo">Período: ${formatarData(dataInicio)} a ${formatarData(dataFim)}</div>
+  `;
+  container.appendChild(resumoHeader);
+  
+  // Cria a tabela de resumo
+  const tabelaResumo = document.createElement('table');
+  tabelaResumo.className = 'relatorio-resumo';
+  
+  // Cria o cabeçalho da tabela
+  const thead = document.createElement('thead');
+  thead.innerHTML = `
+    <tr>
+      <th>Produto</th>
+      <th>Quantidade Vendida</th>
+      <th>Valor Total (R$)</th>
+    </tr>
+  `;
+  tabelaResumo.appendChild(thead);
+  
+  // Cria o corpo da tabela
+  const tbody = document.createElement('tbody');
+  
+  // Preenche a tabela com os dados consolidados
+  Object.keys(relatorioPorProduto).forEach(nome => {
+    const item = relatorioPorProduto[nome];
+    totalUnidades += item.unidades;
+    totalValor += item.valor;
+    
+    const linha = document.createElement('tr');
+    linha.innerHTML = `
+      <td>${nome}</td>
+      <td>${item.unidades} unid.</td>
+      <td>${item.valor.toFixed(2)}</td>
+    `;
+    tbody.appendChild(linha);
+  });
+  
+  // Adiciona linha de totais
+  const linhaTotal = document.createElement('tr');
+  linhaTotal.className = 'total-row';
+  linhaTotal.innerHTML = `
+    <td><strong>TOTAL</strong></td>
+    <td><strong>${totalUnidades} unid.</strong></td>
+    <td><strong>R$ ${totalValor.toFixed(2)}</strong></td>
+  `;
+  tbody.appendChild(linhaTotal);
+  
+  tabelaResumo.appendChild(tbody);
+  container.appendChild(tabelaResumo);
+  
+  // Adiciona informações adicionais
+  const infoAdicional = document.createElement('div');
+  infoAdicional.style.marginTop = '15px';
+  infoAdicional.style.fontSize = '13px';
+  infoAdicional.style.color = '#666';
+  infoAdicional.innerHTML = `
+    <p><strong>Período analisado:</strong> ${datasSalvas.length} dia(s)</p>
+    <p><strong>Total de produtos:</strong> ${Object.keys(relatorioPorProduto).length}</p>
+    <p><strong>Gerado em:</strong> ${new Date().toLocaleString()}</p>
+  `;
+  container.appendChild(infoAdicional);
+}
+
+// Função para formatar data no formato DD/MM/AAAA
+function formatarData(dataStr) {
+  const [ano, mes, dia] = dataStr.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
+// Exporta relatório em formato TXT
+function exportarRelatorioTXT() {
+  const dataInicio = document.getElementById('dataInicioRelatorio').value;
+  const dataFim = document.getElementById('dataFimRelatorio').value;
+  
+  if (!dataInicio || !dataFim) {
+    alert('Por favor, selecione as datas de início e fim!');
+    return;
+  }
+  
+  // Cria o conteúdo do arquivo TXT
+  let conteudoTXT = `Relatório Resumido de Vendas\n`;
+  conteudoTXT += `Período: ${formatarData(dataInicio)} a ${formatarData(dataFim)}\n\n`;
+  conteudoTXT += 'PRODUTO\tQUANTIDADE\tVALOR TOTAL (R$)\n';
+  conteudoTXT += '----------------------------------------\n';
+  
+  // Percorre todas as linhas da tabela de resumo (exceto cabeçalho e total)
+  const linhas = document.querySelectorAll('.relatorio-resumo tbody tr:not(.total-row)');
+  linhas.forEach(linha => {
+    const colunas = linha.querySelectorAll('td');
+    const produto = colunas[0].textContent;
+    const quantidade = colunas[1].textContent;
+    const valor = colunas[2].textContent;
+    
+    conteudoTXT += `${produto}\t${quantidade}\t${valor}\n`;
+  });
+  
+  conteudoTXT += '----------------------------------------\n';
+  
+  // Adiciona o total
+  const linhaTotal = document.querySelector('.relatorio-resumo .total-row');
+  if (linhaTotal) {
+    const colunas = linhaTotal.querySelectorAll('td');
+    conteudoTXT += `${colunas[0].textContent}\t${colunas[1].textContent}\t${colunas[2].textContent}\n`;
+  }
+  
+  // Adiciona informações adicionais
+  conteudoTXT += '\nINFORMAÇÕES ADICIONAIS:\n';
+  const infos = document.querySelectorAll('#relatorioResumoContainer > div:last-child p');
+  infos.forEach(info => {
+    conteudoTXT += `${info.textContent}\n`;
+  });
+  
+  // Cria um blob com o conteúdo
+  const blob = new Blob([conteudoTXT], { type: 'text/plain' });
+  
+  // Cria um link para download
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `relatorio_resumido_vendas_${dataInicio}_a_${dataFim}.txt`;
+  
+  // Adiciona o link ao documento e simula o clique
+  document.body.appendChild(link);
+  link.click();
+  
+  // Remove o link após o download
+  document.body.removeChild(link);
+}
+
+// Exporta relatório em formato PDF
+function exportarRelatorioPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  const dataInicio = document.getElementById('dataInicioRelatorio').value;
+  const dataFim = document.getElementById('dataFimRelatorio').value;
+  const periodo = `Período: ${formatarData(dataInicio)} a ${formatarData(dataFim)}`;
+  
+  // Título do relatório
+  doc.setFontSize(16);
+  doc.setTextColor(40);
+  doc.text('Relatório Resumido de Vendas', 105, 15, { align: 'center' });
+  
+  // Período
+  doc.setFontSize(12);
+  doc.text(periodo, 105, 22, { align: 'center' });
+  
+  // Data de geração
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Gerado em: ${new Date().toLocaleString()}`, 105, 28, { align: 'center' });
+  
+  // Cabeçalho da tabela
+  doc.setFontSize(12);
+  doc.setTextColor(40);
+  doc.setFillColor(59, 130, 246);
+  doc.setTextColor(255, 255, 255);
+  doc.rect(10, 35, 190, 8, 'F');
+  doc.text('Produto', 15, 40);
+  doc.text('Quantidade', 100, 40);
+  doc.text('Valor Total (R$)', 160, 40);
+  
+  // Dados da tabela
+  let y = 48;
+  doc.setFontSize(10);
+  doc.setTextColor(40);
+  
+  // Percorre todas as linhas da tabela de resumo (exceto cabeçalho e total)
+  const linhas = document.querySelectorAll('.relatorio-resumo tbody tr:not(.total-row)');
+  linhas.forEach(linha => {
+    const colunas = linha.querySelectorAll('td');
+    const produto = colunas[0].textContent;
+    const quantidade = colunas[1].textContent;
+    const valor = colunas[2].textContent;
+    
+    // Alterna cores das linhas para melhor legibilidade
+    if (y % 2 === 0) {
+      doc.setFillColor(243, 244, 246);
+      doc.rect(10, y-4, 190, 6, 'F');
+    }
+    
+    doc.text(produto, 15, y);
+    doc.text(quantidade, 100, y);
+    doc.text(valor, 160, y);
+    
+    y += 6;
+  });
+  
+  // Linha de totais
+  doc.setFontSize(11);
+  doc.setFillColor(245, 158, 11);
+  doc.setTextColor(255, 255, 255);
+  doc.rect(10, y-4, 190, 8, 'F');
+  
+  const linhaTotal = document.querySelector('.relatorio-resumo .total-row');
+  if (linhaTotal) {
+    const colunas = linhaTotal.querySelectorAll('td');
+    doc.text(colunas[0].textContent, 15, y+2);
+    doc.text(colunas[1].textContent, 100, y+2);
+    doc.text(colunas[2].textContent, 160, y+2);
+  }
+  
+  // Informações adicionais
+  y += 12;
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text('Informações Adicionais:', 15, y);
+  
+  const infos = document.querySelectorAll('#relatorioResumoContainer > div:last-child p');
+  infos.forEach(info => {
+    y += 6;
+    doc.text(info.textContent, 20, y);
+  });
+  
+  // Salva o PDF
+  doc.save(`relatorio_vendas_${dataInicio}_a_${dataFim}.pdf`);
+}
+
+// Compartilha relatório via WhatsApp
+function compartilharWhatsApp() {
+  const dataInicio = document.getElementById('dataInicioRelatorio').value;
+  const dataFim = document.getElementById('dataFimRelatorio').value;
+  
+  if (!dataInicio || !dataFim) {
+    alert('Por favor, selecione as datas de início e fim!');
+    return;
+  }
+  
+  // Cria o conteúdo da mensagem
+  let mensagem = `*Relatório Resumido de Vendas*\n`;
+  mensagem += `*Período:* ${formatarData(dataInicio)} a ${formatarData(dataFim)}\n\n`;
+  mensagem += '*Produtos Vendidos:*\n';
+  
+  // Percorre todas as linhas da tabela de resumo (exceto cabeçalho e total)
+  const linhas = document.querySelectorAll('.relatorio-resumo tbody tr:not(.total-row)');
+  linhas.forEach(linha => {
+    const colunas = linha.querySelectorAll('td');
+    const produto = colunas[0].textContent;
+    const quantidade = colunas[1].textContent;
+    const valor = colunas[2].textContent;
+    
+    mensagem += `- ${produto}: ${quantidade} (${valor})\n`;
+  });
+  
+  // Adiciona o total
+  const linhaTotal = document.querySelector('.relatorio-resumo .total-row');
+  if (linhaTotal) {
+    const colunas = linhaTotal.querySelectorAll('td');
+    mensagem += `\n*TOTAL:* ${colunas[1].textContent} (${colunas[2].textContent})\n`;
+  }
+  
+  // Adiciona informações adicionais
+  mensagem += '\n*Informações Adicionais:*\n';
+  const infos = document.querySelectorAll('#relatorioResumoContainer > div:last-child p');
+  infos.forEach(info => {
+    mensagem += `${info.textContent}\n`;
+  });
+  
+  // Codifica a mensagem para URL
+  const mensagemCodificada = encodeURIComponent(mensagem);
+  
+  // Cria o link do WhatsApp
+  const linkWhatsApp = `https://wa.me/?text=${mensagemCodificada}`;
+  
+  // Abre em uma nova janela
+  window.open(linkWhatsApp, '_blank');
+}
+
+// Carrega dados do link compartilhado
+function carregarDadosCompartilhados() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const dadosCompartilhados = urlParams.get('data');
+  
+  if (dadosCompartilhados) {
+    try {
+      const produtos = JSON.parse(decodeURIComponent(dadosCompartilhados));
+      document.getElementById('tabelaProdutos').innerHTML = '';
+      produtos.forEach(p => adicionarProduto(p));
+      salvarDadosPersistentes();
+      calcular();
+    } catch (e) {
+      console.error('Erro ao carregar dados compartilhados:', e);
+    }
+  }
+}
+
+// Funções para Backup e Restore
+function abrirModalBackup() {
+  toggleMenu();
+  document.getElementById('modalBackup').style.display = 'block';
+  document.getElementById('backupText').style.display = 'none';
+  document.getElementById('backupActions').style.display = 'none';
+}
+
+function gerarBackup() {
+  // Coleta todos os dados do localStorage
+  const dadosBackup = {};
+  
+  // Coleta todos os dados de inventário
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('inventario-') || key === 'infoFixas' || key === 'cabecalhos' || key === 'dadosPersistentes') {
+      dadosBackup[key] = localStorage.getItem(key);
+    }
+  });
+  
+  // Cria um blob com os dados
+  const blob = new Blob([JSON.stringify(dadosBackup, null, 2)], { type: 'application/json' });
+  
+  // Cria um link para download
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `backup_inventario_${new Date().toISOString().split('T')[0]}.json`;
+  
+  // Adiciona o link ao documento e simula o clique
+  document.body.appendChild(link);
+  link.click();
+  
+  // Remove o link após o download
+  document.body.removeChild(link);
+  
+  fecharModal('modalBackup');
+  alert('Backup gerado com sucesso!');
+}
+
+function restaurarBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const dadosBackup = JSON.parse(e.target.result);
+      
+      if (!confirm('Tem certeza que deseja restaurar este backup? Todos os dados atuais serão substituídos.')) {
+        return;
+      }
+      
+      // Limpa os dados existentes
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('inventario-') || key === 'infoFixas' || key === 'cabecalhos' || key === 'dadosPersistentes') {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Restaura os dados do backup
+      Object.keys(dadosBackup).forEach(key => {
+        localStorage.setItem(key, dadosBackup[key]);
+      });
+      
+      // Recarrega a página para aplicar as mudanças
+      location.reload();
+      
+    } catch (e) {
+      console.error('Erro ao restaurar backup:', e);
+      alert('Erro ao restaurar backup. O arquivo pode estar corrompido.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function copiarDadosBackup() {
+  // Coleta todos os dados do localStorage
+  const dadosBackup = {};
+  
+  // Coleta todos os dados de inventário
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('inventario-') || key === 'infoFixas' || key === 'cabecalhos' || key === 'dadosPersistentes') {
+      dadosBackup[key] = localStorage.getItem(key);
+    }
+  });
+  
+  // Converte para string formatada
+  const dadosTexto = JSON.stringify(dadosBackup, null, 2);
+  
+  // Cria um elemento textarea temporário
+  const textarea = document.createElement('textarea');
+  textarea.value = dadosTexto;
+  document.body.appendChild(textarea);
+  
+  // Seleciona e copia o texto
+  textarea.select();
+  
+  try {
+    const copiado = document.execCommand('copy');
+    if (copiado) {
+      alert('Dados copiados para a área de transferência!');
+      fecharModal('modalBackup');
+    } else {
+      throw new Error('Falha ao copiar');
+    }
+  } catch (err) {
+    console.error('Erro ao copiar dados:', err);
+    alert('Erro ao copiar dados para a área de transferência. Tente manualmente: Ctrl+C');
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
+function restaurarDeTexto() {
+  const texto = document.getElementById('backupText').value;
+  if (!texto) {
+    alert('Por favor, cole os dados de backup no campo de texto.');
+    return;
+  }
+  
+  try {
+    const dadosBackup = JSON.parse(texto);
+    
+    if (!confirm('Tem certeza que deseja restaurar este backup? Todos os dados atuais serão substituídos.')) {
+      return;
+    }
+    
+    // Limpa os dados existentes
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('inventario-') || key === 'infoFixas' || key === 'cabecalhos' || key === 'dadosPersistentes') {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Restaura os dados do backup
+    Object.keys(dadosBackup).forEach(key => {
+      localStorage.setItem(key, dadosBackup[key]);
+    });
+    
+    // Recarrega a página para aplicar as mudanças
+    location.reload();
+    
+  } catch (e) {
+    console.error('Erro ao restaurar backup:', e);
+    alert('Erro ao restaurar backup. Os dados podem estar corrompidos ou no formato incorreto.');
+  }
+}
+
+// Inicialização
+window.onload = () => {
+  // Carrega dados persistentes ao invés de configurar data atual diretamente
+  carregarDadosPersistentes();
+  
+  atualizarSelectDatas();
+  carregarDadosCompartilhados();
+  
+  // Carrega cabeçalhos salvos se existirem
+  if (cabecalhosSalvos) {
+    const ths = document.querySelectorAll('#tabelaInventario th');
+    cabecalhosSalvos.forEach((texto, index) => {
+      if (ths[index]) {
+        ths[index].textContent = texto;
+      }
+    });
+  }
+  
+  // Carrega informações fixas de produtos
+  Object.keys(infoFixas).forEach(nome => {
+    // Verifica se o produto já não foi carregado pelos dados persistentes
+    const produtoExistente = Array.from(document.querySelectorAll("#tabelaProdutos tr")).some(linha => 
+      linha.cells[0].firstChild.value === nome
+    );
+    
+    if (!produtoExistente) {
+      adicionarProduto({ nome, ...infoFixas[nome] });
+    }
+  });
+
+  salvarEstado();
+  calcular();
+
+  // Configura arrastar e soltar para reordenar produtos
+  new Sortable(document.getElementById("tabelaProdutos"), {
+    animation: 150,
+    ghostClass: "sortable-ghost",
+    handle: "td:first-child",
+    filter: "input",
+    preventOnFilter: false,
+    onEnd: () => {
+      salvarEstado();
+    }
+  });
+  
+  // Configura o overlay para fechar o menu quando clicado
+  document.getElementById("menuOverlay").addEventListener("click", function() {
+    const menu = document.getElementById("hiddenMenu");
+    if (menu.classList.contains("active")) {
+      toggleMenu(); // Isso vai fechar o menu
+    }
+  });
+  
+  // Configura a exibição do campo de texto para restauração
+  document.getElementById('backupText').addEventListener('focus', function() {
+    document.getElementById('backupActions').style.display = 'block';
+  });
+  
+  // Fecha modais quando clica fora
+  window.onclick = function(event) {
+    const modal = document.getElementById("modalAdicionar");
+    const modalContagem = document.getElementById("modalContagemFinal");
+    const modalRelatorio = document.getElementById("modalRelatorioPeriodo");
+    const modalBackup = document.getElementById("modalBackup");
+    
+    if (event.target == modal) {
+      fecharModal('modalAdicionar');
+    }
+    if (event.target == modalContagem) {
+      fecharModal('modalContagemFinal');
+    }
+    if (event.target == modalRelatorio) {
+      fecharModalRelatorioPeriodo();
+    }
+    if (event.target == modalBackup) {
+      fecharModal('modalBackup');
+    }
+  };
+};
+</script>
+</body>
+</html>
